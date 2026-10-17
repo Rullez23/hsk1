@@ -62,6 +62,9 @@ button:disabled{cursor:default}
 .nm{font-weight:700;font-size:15px;margin-top:8px}
 .tp{font-size:12.5px;color:var(--muted);line-height:1.35;margin-top:2px}
 .locked-label .nm{color:var(--muted)}
+.testbtn{margin-top:8px;font-size:13.5px;font-weight:700;color:var(--jade);background:var(--paper);border:1.5px solid var(--jade2);border-radius:99px;padding:5px 14px}
+.testbtn:active{transform:translateY(1px)}
+.locked-label .testbtn{color:var(--muted);border-color:var(--line);border-style:dashed}
 .foot{text-align:center;padding:10px 0 40px}
 .link{color:var(--muted);text-decoration:underline;font-size:14px;padding:8px}
 
@@ -654,10 +657,10 @@ function checkPy(input, answers){
 }
 
 /* ---------------- map ---------------- */
-const unlocked = i => i===0 || (state.stars[LEVELS[i-1].id]||0)>0;
+const unlocked = i => i===0 || (state.stars[LEVELS[i-1].id]||0)>0 || (state.stars[LEVELS[i].id]||0)>0;
 function renderMap(){
   quiz=null;
-  const totalStars=Object.values(state.stars).reduce((a,b)=>a+b,0), GAP=172, H=LEVELS.length*GAP+20;
+  const totalStars=Object.values(state.stars).reduce((a,b)=>a+b,0), GAP=204, H=LEVELS.length*GAP+20;
   const pts=LEVELS.map((L,i)=>({x:50+24*Math.sin(i*1.15),y:20+i*GAP}));
   let reach=0; LEVELS.forEach((L,i)=>{ if(unlocked(i)) reach=i; });
   const path=upto=>pts.slice(0,upto+1).reduce((d,p,i,a)=> i===0?`M${p.x} ${p.y+39}`:d+` C${a[i-1].x} ${a[i-1].y+39+GAP/2},${p.x} ${p.y+39-GAP/2},${p.x} ${p.y+39}`,'');
@@ -666,7 +669,7 @@ function renderMap(){
     return `<div class="node ${un?'':'locked-label'}" style="left:${p.x}%;top:${p.y}px">
       <button class="seal ${cls} ${un&&!s?'cur':''}" data-lv="${i}" ${un?'':'disabled'} aria-label="${L.name}${un?'':', locked'}"><span class="han">${L.glyph}</span></button>
       ${s?`<div class="stars" aria-label="${s} of 3 stars">${'★'.repeat(s)}<span>${'★'.repeat(3-s)}</span></div>`:''}
-      <div class="nm">${L.name}</div><div class="tp">${L.topic}${L.cards.length?` · ${L.cards.length} words`:''}</div></div>`;
+      <div class="nm">${L.name}</div><div class="tp">${L.topic}${L.cards.length?` · ${L.cards.length} words`:''}</div>${L.boss?'':`<button class="testbtn" data-act="test" data-v="${i}" aria-label="Go straight to the ${L.name} test">${un?'Take the test':'Skip ahead: test'}</button>`}</div>`;
   }).join('');
   let here=LEVELS.findIndex((L,i)=>unlocked(i)&&!state.stars[L.id]); if(here<0) here=LEVELS.length-1;
   const deco=LEVELS.map((L,i)=>{ const p=pts[i], left=p.x>=50, big=L.scene==='dragon', pos=left?'left:4px':'right:4px';
@@ -713,7 +716,7 @@ function renderLearn(li,k=0){
         <button class="big han" data-say="${w.h}" style="font-size:${bigSize(w.h)}px" aria-label="Hear ${esc(w.p)}">${w.h}</button>
         <div class="py">${esc(w.p)}</div><div class="en">${esc(M(w))}</div><div class="en2">${esc(M2(w))}</div>
         ${canSpeak?`<div class="speakrow"><button class="speak" data-say="${w.h}">${SPK} Hear it</button><button class="speak" data-say="${w.h}" data-slow="1">Slower</button></div>`:''}</div>
-      ${state.stars[L.id]&&!last?`<button class="link skip" data-act="quiz">Skip to challenge</button>`:''}
+      ${!last?`<button class="link skip" data-act="quiz">Skip to the test</button>`:''}
     </div>
     <div class="dock"><button class="btn ghost" data-act="prev" ${k===0?'disabled':''}>Back</button>
       <button class="btn" data-act="next">${last?'Start challenge':'Next'}</button></div>`;
@@ -835,6 +838,7 @@ app.addEventListener('click', e=>{
     case 'map': if(canSpeak) speechSynthesis.cancel(); renderMap(); break;
     case 'prev': renderLearn(cur.li,cur.k-1); break;
     case 'next': cur.k===LEVELS[cur.li].cards.length-1 ? startQuiz(cur.li) : renderLearn(cur.li,cur.k+1); break;
+    case 'test': startQuiz(v); break;
     case 'quiz': startQuiz(cur.li); break;
     case 'opt': if(quiz.answered) return; q.chosen=v; grade(q.options[v]===q.answer?'right':'wrong'); break;
     case 'checkpy': checkTyped(); break;
